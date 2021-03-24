@@ -20,7 +20,7 @@ setup(name='plip',
       packages=find_packages(),
       scripts=['plip/plipcmd.py'],
       install_requires=[
-          'openbabel',
+          #'openbabel', # not a pip installable package (conda only)
           'numpy',
           'lxml'
       ],

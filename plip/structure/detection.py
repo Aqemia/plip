@@ -73,12 +73,22 @@ def hbonds(acceptors, donor_pairs, protisdon, typ):
     data = namedtuple('hbond', 'a a_orig_idx d d_orig_idx h distance_ah distance_ad angle type protisdon resnr '
                                'restype reschain resnr_l restype_l reschain_l sidechain atype dtype')
     pairings = []
+
+    # DEBUG
+    if protisdon:
+        logger.info(f'Ligand has {len(acceptors)} acceptors')
+        logger.info(f'Prot has {len(donor_pairs)} donor pairs of type {typ}')
+    else:
+        logger.info(f'Prot has {len(acceptors)} acceptors')
+        logger.info(f'Lig has {len(donor_pairs)} donor pairs of type {typ}')
+
     for acc, don in itertools.product(acceptors, donor_pairs):
-        if not typ == 'strong':
-            continue
+        #if not typ == 'strong':
+            #continue # keep only the strong hydrogen bonds (default plip version)
         # Regular (strong) hydrogen bonds
-        dist_ah = euclidean3d(acc.a.coords, don.h.coords)
-        dist_ad = euclidean3d(acc.a.coords, don.d.coords)
+
+        dist_ah = euclidean3d(acc.a.coords, don.h.coords)  # acceptor to H dist
+        dist_ad = euclidean3d(acc.a.coords, don.d.coords)  # acceptor to donor dist
         if not config.MIN_DIST < dist_ad < config.HBOND_DIST_MAX:
             continue
         vec1, vec2 = vector(don.h.coords, don.d.coords), vector(don.h.coords, acc.a.coords)
@@ -108,7 +118,7 @@ def hbonds(acceptors, donor_pairs, protisdon, typ):
                        restype_l=restype_l, reschain_l=rechain_l, sidechain=is_sidechain_hbond,
                        atype=acc.a.type, dtype=don.d.type)
         pairings.append(contact)
-    return filter_contacts(pairings)
+    return pairings #filter_contacts(pairings)
 
 
 def pistacking(rings_bs, rings_lig):
