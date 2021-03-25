@@ -8,7 +8,6 @@ def characterize_complex(pdb_file: str, binding_site_id: str) -> PLInteraction:
     pdb_complex.load_pdb(pdb_file)
     for ligand in pdb_complex.ligands:
         if ':'.join([ligand.hetid, ligand.chain, str(ligand.position)]) == binding_site_id:
-            print(ligand)
             pdb_complex.characterize_complex(ligand)
     return pdb_complex
 
