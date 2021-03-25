@@ -496,10 +496,9 @@ class Mol:
         """Select all carbon atoms which have only carbons and/or hydrogens as direct neighbors."""
         atom_set = []
         data = namedtuple('hydrophobic', 'atom orig_atom orig_idx')
-        #atm = [a for a in all_atoms if a.atomicnum == 6 and set([natom.GetAtomicNum() for natom
-        #                                                         in pybel.ob.OBAtomAtomIter(a.OBAtom)]).issubset(
-        #    {1, 6})]
-        atm = [a for a in all_atoms if a.atomicnum == 6]
+        atm = [a for a in all_atoms if a.atomicnum == 6 and set([natom.GetAtomicNum() for natom
+                                                                 in pybel.ob.OBAtomAtomIter(a.OBAtom)]).issubset(
+            {1, 6})]
         for atom in atm:
             orig_idx = self.Mapper.mapid(atom.idx, mtype=self.mtype, bsid=self.bsid)
             orig_atom = self.Mapper.id_to_atom(orig_idx)
@@ -619,23 +618,26 @@ class PLInteraction:
         self.saltbridge_lneg = saltbridge(self.bindingsite.get_pos_charged(), self.ligand.get_neg_charged(), True)
         self.saltbridge_pneg = saltbridge(self.ligand.get_pos_charged(), self.bindingsite.get_neg_charged(), False)
 
-        # FIX H-bonds : parses separately the different types of H bond donors in the ligand
+        # H-bonds : parses separately the different types of H bond donors in the ligand
         # get ligand donors, by type :
         lig_donors = self.ligand.get_hbd()
         lig_ar_donors = self.ligand.get_aromatic_hbd()
         lig_weak_donors = self.ligand.get_weak_hbd()
         logger.info(f'Ligand donors stats: {len(lig_donors)} strong |  {len(lig_ar_donors)} aromatic | {len(lig_weak_donors)} weak')
 
-        # Ligand donor
+        # Ligand donor : strong, weak and aromatic
         self.all_hbonds_ldon = hbonds(self.bindingsite.get_hba(),
-                                      self.ligand.get_hbd(), False, 'strong')
+                                      lig_donors, False, 'strong')
         self.all_hbonds_ldon.extend(hbonds(self.bindingsite.get_hba(),
-                                      self.ligand.get_aromatic_hbd(), False, 'aromatic'))
+                                      lig_weak_donors, False, 'weak'))
+        self.all_hbonds_ldon.extend(hbonds(self.bindingsite.get_hba(),
+                                      lig_ar_donors, False, 'aromatic'))
 
-        # Protein donor
+        # Protein donor : strong only
         self.all_hbonds_pdon = hbonds(self.ligand.get_hba(),
                                       self.bindingsite.get_hbd(), True, 'strong')
 
+        # Refine : remove hbonds where the atom is already in a salt-bridge or a better h-bond
         self.hbonds_ldon = self.refine_hbonds_ldon(self.all_hbonds_ldon, self.saltbridge_lneg,
                                                    self.saltbridge_pneg)
         self.hbonds_pdon = self.refine_hbonds_pdon(self.all_hbonds_pdon, self.saltbridge_lneg,
@@ -1063,7 +1065,7 @@ class Ligand(Mol):
         self.hbond_don_atom_pairs = self.find_hbd(self.all_atoms, self.hydroph_atoms)
 
         ######
-        # special case function by Plip authors (use OBabel to deal with the ligand)
+        # special case function by Plip authors (uses OBabel to deal with the ligand)
         donor_pairs = []
         data = namedtuple('hbonddonor', 'd d_orig_atom d_orig_idx h type')
         for donor in self.all_atoms:
@@ -1077,7 +1079,7 @@ class Ligand(Mol):
                                             h=pybel.Atom(adj_atom), type='regular'))
 
         #######
-        # MY function to catch hydrogens linked to an aromatic atom
+        # NEW function to catch hydrogens linked to an aromatic atom and mark as ar donors :
         for donor in self.all_atoms:
             pdbidx = self.Mapper.mapid(donor.idx, mtype='ligand', bsid=self.bsid, to='original')
             d = cclass.atoms[self.pdb_to_idx_mapping[pdbidx]]
@@ -1086,7 +1088,7 @@ class Ligand(Mol):
                 for adj_atom in [a for a in pybel.ob.OBAtomAtomIter(d.OBAtom) if a.GetAtomicNum()==1]:
                     d_orig_atom = self.Mapper.id_to_atom(pdbidx)
                     donor_pairs.append(data(d=donor, d_orig_atom=d_orig_atom, d_orig_idx=pdbidx,
-                                            h=pybel.Atom(adj_atom), type='aromatic')) # assign "aromatic" type to this h-bond
+                                            h=pybel.Atom(adj_atom), type='aromatic')) # assign "aromatic" type to this donor pair
 
         self.hbond_don_atom_pairs = donor_pairs
         #######

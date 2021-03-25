@@ -118,7 +118,7 @@ def hbonds(acceptors, donor_pairs, protisdon, typ):
                        restype_l=restype_l, reschain_l=rechain_l, sidechain=is_sidechain_hbond,
                        atype=acc.a.type, dtype=don.d.type)
         pairings.append(contact)
-    return pairings #filter_contacts(pairings)
+    return filter_contacts(pairings)
 
 
 def pistacking(rings_bs, rings_lig):
