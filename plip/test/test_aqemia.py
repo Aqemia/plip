@@ -1,5 +1,6 @@
 from plip.basic import config
 from plip.structure.preparation import PDBComplex, PLInteraction
+from plip.exchange.report import StructureReport
 import logging
 
 
@@ -22,3 +23,12 @@ def test_bayer_reference():
     assert(residues_ldon== {43,79,81})
     assert(residues_pdon=={141, 81})
     print('Bayer test for aromatic LH passed !')
+
+def test_xml():
+    complex_ = characterize_complex('aqemia/Pose_Compose_Ref.pdb', 'LIG:A:1')
+    complex_.output_path = './'
+    streport = StructureReport(complex_, outputprefix='report')
+    streport.write_xml(as_string=False)
+
+#if __name__=='__main__':
+#    test_xml()
