@@ -22,7 +22,7 @@ def test_bayer_reference():
     residues_pdon = set([hbond.resnr for hbond in interactions.all_hbonds_pdon])
     assert(residues_ldon== {43,79,81})
     assert(residues_pdon=={141, 81})
-    print('Bayer test for aromatic LH passed !')
+    print('test on crystal structure for aromatic LH passed !')
 
 def test_xml():
     complex_ = characterize_complex('aqemia/Pose_Compose_Ref.pdb', 'LIG:A:1')
