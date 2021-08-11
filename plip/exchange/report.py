@@ -158,7 +158,7 @@ class BindingSiteReport:
             'TYPE', 'RESNR' , 'RESTYPE', 'RESCHAIN', 'RESNR_LIG', 'RESTYPE_LIG', 'RESCHAIN_LIG', 'SIDECHAIN', 'DIST_H-A',
             'DIST_D-A',
             'DON_ANGLE',
-            'PROTISDON', 'DONORIDX', 'DONORTYPE', 'ACCEPTORIDX', 'ACCEPTORTYPE', 'LIGCOO', 'PROTCOO', 'TYPE')
+            'PROTISDON', 'DONORIDX', 'DONORTYPE', 'ACCEPTORIDX', 'ACCEPTORTYPE', 'LIGCOO', 'PROTCOO')
         self.hbond_info = []
         for hbond in self.complex.hbonds_pdon + self.complex.hbonds_ldon:
             ligatom, protatom = (hbond.a, hbond.d) if hbond.protisdon else (hbond.d, hbond.a)
@@ -167,7 +167,7 @@ class BindingSiteReport:
                                     hbond.reschain_l, hbond.sidechain,
                                     '%.2f' % hbond.distance_ah, '%.2f' % hbond.distance_ad, '%.2f' % hbond.angle,
                                     hbond.protisdon, hbond.d_orig_idx, hbond.dtype, hbond.a_orig_idx, hbond.atype,
-                                    ligatom.coords, protatom.coords, hbond.type))
+                                    ligatom.coords, protatom.coords))
 
         #################
         # WATER-BRIDGES #
