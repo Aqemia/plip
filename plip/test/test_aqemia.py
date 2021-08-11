@@ -1,5 +1,6 @@
 from plip.basic import config
 from plip.structure.preparation import PDBComplex, PLInteraction
+from plip.exchange.report import StructureReport
 import logging
 
 
@@ -8,7 +9,6 @@ def characterize_complex(pdb_file: str, binding_site_id: str) -> PLInteraction:
     pdb_complex.load_pdb(pdb_file)
     for ligand in pdb_complex.ligands:
         if ':'.join([ligand.hetid, ligand.chain, str(ligand.position)]) == binding_site_id:
-            print(ligand)
             pdb_complex.characterize_complex(ligand)
     return pdb_complex
 
@@ -22,4 +22,13 @@ def test_bayer_reference():
     residues_pdon = set([hbond.resnr for hbond in interactions.all_hbonds_pdon])
     assert(residues_ldon== {43,79,81})
     assert(residues_pdon=={141, 81})
-    print('Bayer test for aromatic LH passed !')
+    print('test on crystal structure for aromatic LH passed !')
+
+def test_xml():
+    complex_ = characterize_complex('aqemia/Pose_Compose_Ref.pdb', 'LIG:A:1')
+    complex_.output_path = './'
+    streport = StructureReport(complex_, outputprefix='report')
+    streport.write_xml(as_string=False)
+
+#if __name__=='__main__':
+#    test_xml()
