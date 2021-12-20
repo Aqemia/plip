@@ -38,7 +38,7 @@ def fetch_pdb(pdbid):
     # elif state == 'UNKNOWN':
     #     logger.error('invalid PDB-ID (entry does not exist on PDB server)')
     #     sys.exit(1)
-    logger.info('downloading file from PDB')
+    logger.debug('downloading file from PDB')
     # get URL for current entry
     # @todo needs update to react properly on response codes of RCSB servers
     pdburl = f'https://files.rcsb.org/download/{pdbid}.pdb'

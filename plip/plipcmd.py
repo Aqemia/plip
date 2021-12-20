@@ -47,7 +47,7 @@ def process_pdb(pdbfile, outpath, as_string=False, outputprefix='report'):
         startmessage = f'starting analysis of {pdb_file_name}'
     else:
         startmessage = 'starting analysis from STDIN'
-    logger.info(startmessage)
+    logger.debug(startmessage)
     mol = PDBComplex()
     mol.output_path = outpath
     mol.load_pdb(pdbfile, as_string=as_string)
@@ -71,7 +71,7 @@ def process_pdb(pdbfile, outpath, as_string=False, outputprefix='report'):
         complexes = [VisualizerData(mol, site) for site in sorted(mol.interaction_sets)
                      if not len(mol.interaction_sets[site].interacting_res) == 0]
         if config.MAXTHREADS > 1:
-            logger.info(f'generating visualizations in parallel on {config.MAXTHREADS} cores')
+            logger.debug(f'generating visualizations in parallel on {config.MAXTHREADS} cores')
             parfn = parallel_fn(visualize_in_pymol)
             parfn(complexes, processes=config.MAXTHREADS)
         else:
@@ -97,7 +97,7 @@ def download_structure(inputpdbid):
         create_folder_if_not_exists(config.BASEPATH)
         with open(pdbpath, 'w') as g:
             g.write(pdbfile)
-        logger.info(f'file downloaded as {pdbpath}')
+        logger.debug(f'file downloaded as {pdbpath}')
         return pdbpath, pdbid
 
     except ValueError:  # Invalid PDB ID, cannot fetch from RCBS server
@@ -111,9 +111,9 @@ def remove_duplicates(slist):
     unique = list(set(slist))
     difference = len(slist) - len(unique)
     if difference == 1:
-        logger.info('removed one duplicate entry from input list')
+        logger.debug('removed one duplicate entry from input list')
     if difference > 1:
-        logger.info(f'Removed {difference} duplicate entries from input list')
+        logger.debug(f'Removed {difference} duplicate entries from input list')
     return unique
 
 
@@ -122,9 +122,9 @@ def run_analysis(inputstructs, inputpdbids):
     pdbid, pdbpath = None, None
     # @todo For multiprocessing, implement better stacktracing for errors
     # Print title and version
-    logger.info(f'Protein-Ligand Interaction Profiler (PLIP) {__version__}')
-    logger.info(f'brought to you by: {config.__maintainer__}')
-    logger.info(f'please cite: https://www.doi.org/10.1093/nar/gkv315')
+    logger.debug(f'Protein-Ligand Interaction Profiler (PLIP) {__version__}')
+    logger.debug(f'brought to you by: {config.__maintainer__}')
+    logger.debug(f'please cite: https://www.doi.org/10.1093/nar/gkv315')
     output_prefix = config.OUTPUTFILENAME
 
     if inputstructs is not None:  # Process PDB file(s)
@@ -161,9 +161,9 @@ def run_analysis(inputstructs, inputpdbids):
 
     if (pdbid is not None or inputstructs is not None) and config.BASEPATH is not None:
         if config.BASEPATH in ['.', './']:
-            logger.info('finished analysis, find the result files in the working directory')
+            logger.debug('finished analysis, find the result files in the working directory')
         else:
-            logger.info(f'finished analysis, find the result files in {config.BASEPATH}')
+            logger.debug(f'finished analysis, find the result files in {config.BASEPATH}')
 
 
 def main():
