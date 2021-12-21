@@ -80,7 +80,7 @@ class PDBParser:
                 # select model
                 try:
                     if other_models:
-                        logger.info(f'selecting model {config.MODEL} for analysis')
+                        logger.debug(f'selecting model {config.MODEL} for analysis')
                     corrected_pdb = ''.join(model_dict[config.MODEL])
                     corrected_lines = model_dict[config.MODEL]
                 except KeyError:
@@ -627,7 +627,7 @@ class PLInteraction:
         lig_donors = self.ligand.get_hbd()
         lig_ar_donors = self.ligand.get_aromatic_hbd()
         lig_weak_donors = self.ligand.get_weak_hbd()
-        logger.info(f'Ligand donors stats: {len(lig_donors)} strong |  {len(lig_ar_donors)} aromatic | {len(lig_weak_donors)} weak')
+        logger.debug(f'Ligand donors stats: {len(lig_donors)} strong |  {len(lig_ar_donors)} aromatic | {len(lig_weak_donors)} weak')
 
         # Ligand donor : strong, weak and aromatic
         self.all_hbonds_ldon = hbonds(self.bindingsite.get_hba(),
@@ -691,7 +691,7 @@ class PLInteraction:
         self.interacting_res = list(set([''.join([str(i.resnr), str(i.reschain)]) for i in self.all_itypes
                                          if i.restype not in ['LIG', 'HOH']]))
         if len(self.interacting_res) != 0:
-            logger.info(
+            logger.debug(
                 f'ligand interacts with {len(self.interacting_res)} binding site residue(s) in chain(s) {self.interacting_chains}')
             interactions_list = []
             num_saltbridges = len(self.saltbridge_lneg + self.saltbridge_pneg)
@@ -713,9 +713,9 @@ class PLInteraction:
             if num_waterbridges != 0:
                 interactions_list.append('%i water bridge(s)' % num_waterbridges)
             if not len(interactions_list) == 0:
-                logger.info(f'complex uses {interactions_list}')
+                logger.debug(f'complex uses {interactions_list}')
         else:
-            logger.info('no interactions for this ligand')
+            logger.debug('no interactions for this ligand')
 
     def find_unpaired_ligand(self):
         """Identify unpaired functional in groups in ligands, involving H-Bond donors, acceptors, halogen bond donors.
@@ -809,7 +809,7 @@ class PLInteraction:
                 hydroph_final.append(min_h)
         before, reduced = len(all_h), len(hydroph_final)
         if not before == 0 and not before == reduced:
-            logger.info(f'reduced number of hydrophobic contacts from {before} to {reduced}')
+            logger.debug(f'reduced number of hydrophobic contacts from {before} to {reduced}')
         return hydroph_final
 
     @staticmethod
@@ -1054,7 +1054,7 @@ class Ligand(Mol):
         self.hbond_acc_atoms = self.find_hba(self.all_atoms)
         self.num_rings = len(self.rings)
         if self.num_rings != 0:
-            logger.info(f'contains {self.num_rings} aromatic ring(s)')
+            logger.debug(f'contains {self.num_rings} aromatic ring(s)')
         descvalues = self.molecule.calcdesc()
         self.molweight, self.logp = float(descvalues['MW']), float(descvalues['logP'])
         self.num_rot_bonds = int(self.molecule.OBMol.NumRotors())
@@ -1183,7 +1183,7 @@ class Ligand(Mol):
                 a_set.append(data(x=a, orig_x=orig_x, x_orig_idx=x_orig_idx,
                                   c=pybel.Atom(n_atoms[0]), c_orig_idx=c_orig_idx))
         if len(a_set) != 0:
-            logger.info(f'ligand contains {len(a_set)} halogen atom(s)')
+            logger.debug(f'ligand contains {len(a_set)} halogen atom(s)')
         return a_set
 
     def find_charged(self, all_atoms):
@@ -1386,7 +1386,7 @@ class PDBComplex:
 
         if not config.PLUGIN_MODE:
             if pdbparser.num_fixed_lines > 0:
-                logger.info(f'{pdbparser.num_fixed_lines} lines automatically fixed in PDB input file')
+                logger.debug(f'{pdbparser.num_fixed_lines} lines automatically fixed in PDB input file')
                 # Save modified PDB file
                 if not as_string:
                     basename = os.path.basename(pdbpath).split('.')[0]
@@ -1407,7 +1407,7 @@ class PDBComplex:
 
         # Update the model in the Mapper class instance
         self.Mapper.original_structure = self.protcomplex.OBMol
-        logger.info('PDB structure successfully read')
+        logger.debug('PDB structure successfully read')
 
         # Determine (temporary) PyMOL Name from Filename
         self.pymol_name = pdbpath.split('/')[-1].split('.')[0] + '-Protein'
@@ -1434,7 +1434,7 @@ class PDBComplex:
             self.protcomplex.OBMol.AddPolarHydrogens()
             output_path = os.path.join(self._output_path, f'{basename}_protonated.pdb')
             self.protcomplex.write('pdb', output_path, overwrite=True)
-            logger.info(f'protonated structure written to {output_path}')
+            logger.debug(f'protonated structure written to {output_path}')
         else:
             logger.warning('no polar hydrogens will be assigned (make sure your structure contains hydrogens)')
 
@@ -1442,7 +1442,7 @@ class PDBComplex:
             self.atoms[atm.idx] = atm
 
         if len(self.excluded) != 0:
-            logger.info(f'excluded molecules as ligands: {self.excluded}')
+            logger.debug(f'excluded molecules as ligands: {self.excluded}')
 
         if config.DNARECEPTOR:
             self.resis = [obres for obres in pybel.ob.OBResidueIter(
@@ -1455,11 +1455,11 @@ class PDBComplex:
 
         num_ligs = len(self.ligands)
         if num_ligs == 1:
-            logger.info('analyzing one ligand')
+            logger.debug('analyzing one ligand')
         elif num_ligs > 1:
-            logger.info(f'analyzing {num_ligs} ligands')
+            logger.debug(f'analyzing {num_ligs} ligands')
         else:
-            logger.info(f'structure contains no ligands')
+            logger.debug(f'structure contains no ligands')
 
     def analyze(self):
         """Triggers analysis of all complexes in structure"""
@@ -1477,15 +1477,15 @@ class PDBComplex:
         longname = ligand.longname if not len(ligand.longname) > 20 else ligand.longname[:20] + '...'
         ligtype = 'unspecified type' if ligand.type == 'UNSPECIFIED' else ligand.type
         ligtext = f'{longname} [{ligtype}] -- {site}'
-        logger.info(f'processing ligand {ligtext}')
+        logger.debug(f'processing ligand {ligtext}')
         if ligtype == 'PEPTIDE':
-            logger.info(f'chain {ligand.chain} will be processed in [PEPTIDE / INTER-CHAIN] mode')
+            logger.debug(f'chain {ligand.chain} will be processed in [PEPTIDE / INTER-CHAIN] mode')
         if ligtype == 'INTRA':
-            logger.info(f'chain {ligand.chain} will be processed in [INTRA-CHAIN] mode')
+            logger.debug(f'chain {ligand.chain} will be processed in [INTRA-CHAIN] mode')
         any_in_biolip = len(set([x[0] for x in ligand.members]).intersection(config.biolip_list)) != 0
 
         if ligtype not in ['POLYMER', 'DNA', 'ION', 'DNA+ION', 'RNA+ION', 'SMALLMOLECULE+ION'] and any_in_biolip:
-            logger.info('may be biologically irrelevant')
+            logger.debug('may be biologically irrelevant')
 
         lig_obj = Ligand(self, ligand)
         cutoff = lig_obj.max_dist_to_center + config.BS_DIST
@@ -1516,7 +1516,7 @@ class PDBComplex:
                 if distance <= config.BS_DIST and r not in bs_atoms_refined:
                     bs_atoms_refined.append(r)
         num_bs_atoms = len(bs_atoms_refined)
-        logger.info(f'binding site atoms in vicinity ({config.BS_DIST} A max. dist: {num_bs_atoms})')
+        logger.debug(f'binding site atoms in vicinity ({config.BS_DIST} A max. dist: {num_bs_atoms})')
 
         bs_obj = BindingSite(bs_atoms_refined, self.protcomplex, self, self.altconf, min_dist, self.Mapper)
         pli_obj = PLInteraction(lig_obj, bs_obj, self)

@@ -76,11 +76,11 @@ def hbonds(acceptors, donor_pairs, protisdon, typ):
 
     # DEBUG
     if protisdon:
-        logger.info(f'Ligand has {len(acceptors)} acceptors')
-        logger.info(f'Prot has {len(donor_pairs)} donor pairs of type {typ}')
+        logger.debug(f'Ligand has {len(acceptors)} acceptors')
+        logger.debug(f'Prot has {len(donor_pairs)} donor pairs of type {typ}')
     else:
-        logger.info(f'Prot has {len(acceptors)} acceptors')
-        logger.info(f'Lig has {len(donor_pairs)} donor pairs of type {typ}')
+        logger.debug(f'Prot has {len(acceptors)} acceptors')
+        logger.debug(f'Lig has {len(donor_pairs)} donor pairs of type {typ}')
 
     for acc, don in itertools.product(acceptors, donor_pairs):
         #if not typ == 'strong':
@@ -472,7 +472,7 @@ def metal_complexation(metals, metal_binding_lig, metal_binding_bs):
         # Record all contact pairing, excluding those with targets superfluous for chosen geometry
         only_water = set([x[0].location for x in contact_pairs]) == {'water'}
         if not only_water:  # No complex if just with water as targets
-            logger.info(f'metal ion {metal.type} complexed with {final_geom} geometry (coo. number {final_coo}/ {num_targets} observed)')
+            logger.debug(f'metal ion {metal.type} complexed with {final_geom} geometry (coo. number {final_coo}/ {num_targets} observed)')
             for contact_pair in contact_pairs:
                 target, distance = contact_pair
                 if target.atom.idx not in excluded:
