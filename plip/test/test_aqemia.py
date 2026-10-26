@@ -1,4 +1,5 @@
 from plip.basic import config
+from plip.basic import supplemental
 from plip.structure.preparation import PDBComplex, PLInteraction
 from plip.exchange.report import StructureReport
 import logging
@@ -29,6 +30,16 @@ def test_xml():
     complex_.output_path = './'
     streport = StructureReport(complex_, outputprefix='report')
     streport.write_xml(as_string=False)
+
+
+def test_int32_to_negative():
+    assert supplemental.int32_to_negative(999) == 999
+    assert supplemental.int32_to_negative(1) == 1
+    assert supplemental.int32_to_negative(0) == 0
+    assert supplemental.int32_to_negative(4294967295) == -1
+    assert supplemental.int32_to_negative(4294966297) == -999
+    assert supplemental.int32_to_negative(4294966296) == -1000
+
 
 #if __name__=='__main__':
 #    test_xml()
