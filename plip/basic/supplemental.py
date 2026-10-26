@@ -355,15 +355,9 @@ def int32_to_negative(int32):
     """Checks if a suspicious number (e.g. ligand position) is in fact a negative number represented as a
     32 bit integer and returns the actual number.
     """
-    dct = {}
-    if int32 == 4294967295:  # Special case in some structures (note, this is just a workaround)
-        return -1
-    for i in range(-1000, -1):
-        dct[np.uint32(i)] = i
-    if int32 in dct:
-        return dct[int32]
-    else:
-        return int32
+    if 0xFF_FF_FF_FF - 1000 < int32 <= 0xFF_FF_FF_FF:
+        return int32 - 0x1_00_00_00_00
+    return int32
 
 
 def read_pdb(pdbfname, as_string=False):
