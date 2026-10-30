@@ -1,7 +1,7 @@
-__version__ = '2.4.0+aqemia0.4'
+__version__ = '3.0.1+aqemia0.4'
 __maintainer__ = 'PharmAI GmbH (2020-2021) - www.pharm.ai - hello@pharm.ai'
-__citation_information__ = "Adasme,M. et al. PLIP 2021: expanding the scope of the protein-ligand interaction profiler to DNA and RNA. " \
-                           "Nucl. Acids Res. (05 May 2021), gkab294. doi: 10.1093/nar/gkab294"
+__citation_information__ = "Schake,P. Bolz,SN. et al. PLIP 2025: introducing protein–protein interactions to the protein–ligand interaction profiler. " \
+                           "Nucl. Acids Res. (10 May 2025), gkaf361. doi: 10.1093/nar/gkaf361"
 
 import logging
 
@@ -28,11 +28,13 @@ INTRA = None
 RESIDUES = {}
 KEEPMOD = False
 DNARECEPTOR = False
-OUTPUTFILENAME = "report"  # Naming for the TXT and XML report files
+OUTPUTFILENAME = None  # Naming for the TXT and XML report files
 NOPDBCANMAP = False  # Skip calculation of mapping canonical atom order: PDB atom order
 NOHYDRO = False  # Do not add hydrogen bonds (in case already present in the structure)
 MODEL = 1  # The model to be selected for multi-model structures (default = 1).
-CHAINS = None # Define chains for protein-protein interaction detection
+CHAINS = None  # Define chains for protein-protein interaction detection
+REGIONS = None
+COMPRESS = False  # Compress XML and TXT report files
 
 AROMATIC_HBOND_DONORS = False  # AQEMIA: treat aromatic C-H of the ligand as hydrogen bond donors
 WEAK_HBOND_DONORS = False  # AQEMIA: use weak hydrogen bonds

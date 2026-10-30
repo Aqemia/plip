@@ -148,7 +148,10 @@ class PDBParser:
             return None, lastnum
         # TER Entries also have continuing numbering, consider them as well
         if pdbline.startswith('TER'):
-            new_num = lastnum + 1
+            if not pdbline[6:11]:  # pdb files saved from PyMol skip the number in TER entries
+                new_num = lastnum
+            else:
+                new_num = lastnum + 1
         if pdbline.startswith('ATOM'):
             new_num = lastnum + 1
             current_num = int(pdbline[6:11])
@@ -260,12 +263,41 @@ class LigandFinder:
             ligand = self.extract_ligand(non_water)
             return ligand
 
+    def getregion(self, ligand_region, bs_region=None):
+        all_from_region = []
+        for chain, residue_numbers in ligand_region.items():
+            if config.KEEPMOD:
+                residues = [
+                    res for res in pybel.ob.OBResidueIter(
+                        self.proteincomplex.OBMol) if (
+                            res.GetChain() == chain and
+                            res.GetNum() in residue_numbers and
+                            (not self.is_het_residue(res) or res.GetName() in self.modresidues)
+                    )
+                ]
+            else:
+                residues = [
+                    res for res in pybel.ob.OBResidueIter(
+                        self.proteincomplex.OBMol) if (
+                            res.GetChain() == chain and
+                            res.GetNum() in residue_numbers and not
+                            self.is_het_residue(res)
+                    )
+                ]
+            all_from_region.extend(residues)
+        if len(all_from_region) == 0:
+            return None
+        else:
+            non_water = [res for res in all_from_region if not res.GetResidueProperty(9)]  # 9 is water
+            ligand = self.extract_ligand(non_water, regions=(ligand_region, bs_region))
+            return ligand
+
     def getligs(self):
         """Get all ligands from a PDB file and prepare them for analysis.
         Returns all non-empty ligands.
         """
 
-        if config.PEPTIDES == [] and config.INTRA is None and config.CHAINS is None:
+        if config.PEPTIDES == [] and config.INTRA is None and config.CHAINS is None and config.REGIONS is None:
             # Extract small molecule ligands (default)
             ligands = []
 
@@ -293,11 +325,17 @@ class LigandFinder:
         else:
             # Extract peptides from given chains
             self.water = [o for o in pybel.ob.OBResidueIter(self.proteincomplex.OBMol) if o.GetResidueProperty(9)]
-            if config.PEPTIDES and not config.CHAINS:
+            if config.PEPTIDES:
                 peptide_ligands = [self.getpeptides(chain) for chain in config.PEPTIDES]
 
             #Todo: Validate change here... Do we want to combine multiple chains to a single ligand?
             # if yes can be easily added to the getpeptides function by flatten the resulting list - Philipp
+            elif config.REGIONS:
+                # regions are defined by tuples of dictionaries in which first dictionary defines the ligand
+                # and second dictionary defines the receptor
+                peptide_ligands = []
+                for lig_rec in config.REGIONS:
+                    peptide_ligands.append(self.getregion(lig_rec[0], lig_rec[1]))
             elif config.CHAINS:
                 # chains is defined as list of list e.g. [['A'], ['B', 'C']] in which second list contains the
                 # ligand chains and the first one should be the receptor
@@ -311,9 +349,9 @@ class LigandFinder:
 
         return [lig for lig in ligands if len(lig.mol.atoms) != 0]
 
-    def extract_ligand(self, kmer):
+    def extract_ligand(self, kmer, regions=None):
         """Extract the ligand by copying atoms and bonds and assign all information necessary for later steps."""
-        data = namedtuple('ligand', 'mol hetid chain position water members longname type atomorder can_to_pdb')
+        data = namedtuple('ligand', 'mol hetid chain position water members longname type atomorder can_to_pdb regions')
         members = [(res.GetName(), res.GetChain(), int32_to_negative(res.GetNum())) for res in kmer]
         members = sort_members_by_importance(members)
         rname, rchain, rnum = members[0]
@@ -321,7 +359,7 @@ class LigandFinder:
         names = [x[0] for x in members]
         longname = '-'.join([x[0] for x in members])
 
-        if config.PEPTIDES or config.CHAINS:
+        if config.PEPTIDES or config.CHAINS or config.REGIONS:
             ligtype = 'PEPTIDE'
         elif config.INTRA is not None:
             ligtype = 'INTRA'
@@ -371,6 +409,10 @@ class LigandFinder:
         lig.title = ':'.join((rname, rchain, str(rnum)))
         self.mapper.ligandmaps[lig.title] = mapold
 
+        if config.REGIONS:
+            lig_idx = config.REGIONS.index(regions)
+            lig.title = ':'.join((rname, rchain, str(rnum), str(lig_idx)))
+
         logger.debug('renumerated molecule generated')
 
         if not config.NOPDBCANMAP:
@@ -384,7 +426,7 @@ class LigandFinder:
 
         ligand = data(mol=lig, hetid=rname, chain=rchain, position=rnum, water=self.water,
                       members=members, longname=longname, type=ligtype, atomorder=atomorder,
-                      can_to_pdb=can_to_pdb)
+                      can_to_pdb=can_to_pdb, regions=regions)
         return ligand
 
     @staticmethod
@@ -911,7 +953,7 @@ class PLInteraction:
         hydroph = [h for h in sel2.values()]
         hydroph_final = []
         #  3. If a protein atom interacts with several neighboring ligand atoms, just keep the one with the closest dist
-        if config.PEPTIDES or config.INTRA or config.CHAINS:
+        if config.PEPTIDES or config.INTRA or config.CHAINS or config.REGIONS:
             # the ligand also consists of amino acid residues, repeat step 2 just the other way around
             sel3 = {}
             for h in hydroph:
@@ -1084,13 +1126,14 @@ class PLInteraction:
 
 
 class BindingSite(Mol):
-    def __init__(self, atoms, protcomplex, cclass, altconf, min_dist, mapper):
+    def __init__(self, atoms, protcomplex, cclass, altconf, min_dist, mapper, regions):
         """Find all relevant parts which could take part in interactions"""
         Mol.__init__(self, altconf, mapper, mtype='protein', bsid=None)
         self.complex = cclass
         self.full_mol = protcomplex
         self.all_atoms = atoms
         self.min_dist = min_dist  # Minimum distance of bs res to ligand
+        self.regions = regions
         self.bs_res = list(set([''.join([str(whichresnumber(a)), whichchain(a)]) for a in self.all_atoms]))  # e.g. 47A
         self.rings = self.find_rings(self.full_mol, self.all_atoms)
         self.hydroph_atoms = self.hydrophobic_atoms(self.all_atoms)
@@ -1119,7 +1162,7 @@ class BindingSite(Mol):
         data = namedtuple('pcharge', 'atoms atoms_orig_idx type center restype resnr reschain')
         a_set = []
         # Iterate through all residue, exclude those in chains defined as peptides
-        for res in [r for r in pybel.ob.OBResidueIter(mol.OBMol) if residue_belongs_to_receptor(r, config)]:
+        for res in [r for r in pybel.ob.OBResidueIter(mol.OBMol) if residue_belongs_to_receptor(r, self.regions)]:
             if config.INTRA is not None:
                 if res.GetChain() != config.INTRA:
                     continue
@@ -1224,12 +1267,12 @@ class Ligand(Mol):
         self.complex = cclass
         self.molecule = ligand.mol  # Pybel Molecule
         # get canonical SMILES String, but not for peptide ligand (tend to be too long -> openBabel crashes)
-        self.smiles = "" if (config.INTRA or config.PEPTIDES or config.CHAINS) else self.molecule.write(format='can')
+        self.smiles = "" if (config.INTRA or config.PEPTIDES or config.CHAINS or config.REGIONS) else self.molecule.write(format='can')
         self.inchikey = self.molecule.write(format='inchikey')
         self.can_to_pdb = ligand.can_to_pdb
         if not len(self.smiles) == 0:
             self.smiles = self.smiles.split()[0]
-        else:
+        elif not (config.INTRA or config.PEPTIDES or config.CHAINS or config.REGIONS):
             logger.warning(f'could not write SMILES for ligand {ligand}')
             self.smiles = ''
         self.heavy_atoms = self.molecule.OBMol.NumHvyAtoms()  # Heavy atoms count
@@ -1245,6 +1288,7 @@ class Ligand(Mol):
         self.molweight, self.logp = float(descvalues['MW']), float(descvalues['logP'])
         self.num_rot_bonds = int(self.molecule.OBMol.NumRotors())
         self.atomorder = ligand.atomorder
+        self.regions = ligand.regions
 
         ##########################################################
         # Special Case for hydrogen bond acceptor identification #
@@ -1335,7 +1379,7 @@ class Ligand(Mol):
         """
         data = namedtuple('lcharge', 'atoms orig_atoms atoms_orig_idx type center fgroup')
         a_set = []
-        if not (config.INTRA or config.PEPTIDES or config.CHAINS):
+        if not (config.INTRA or config.PEPTIDES or config.CHAINS or config.REGIONS):
             for a in all_atoms:
                 a_set = self.append_if_charged_func_group(a=a, a_set=a_set, data=data)
         else:
@@ -1625,12 +1669,12 @@ class PDBComplex:
         if config.KEEPMOD:
             resis = self.exclude_ligand_modresidues(lig_obj.members, resis)
 
-        bs_res = self.extract_bs(cutoff, lig_obj.centroid, resis)
+        bs_res = self.extract_bs(cutoff, lig_obj.centroid, resis, lig_obj.regions)
         # Get a list of all atoms belonging to the binding site, search by idx
         bs_atoms = [self.atoms[idx] for idx in [i for i in self.atoms.keys()
                                                 if self.atoms[i].OBAtom.GetResidue().GetIdx() in bs_res]
                     if idx in self.Mapper.proteinmap and self.Mapper.mapid(idx, mtype='protein') not in self.altconf]
-        if ligand.type == 'PEPTIDE':
+        if ligand.type == 'PEPTIDE' and not config.REGIONS:
             # If peptide, don't consider the peptide chain as part of the protein binding site
             bs_atoms = [a for a in bs_atoms if a.OBAtom.GetResidue().GetChain() != lig_obj.chain]
         if ligand.type == 'INTRA':
@@ -1654,7 +1698,7 @@ class PDBComplex:
         num_bs_atoms = len(bs_atoms_refined)
         logger.info(f'binding site atoms in vicinity ({config.BS_DIST} A max. dist: {num_bs_atoms})')
 
-        bs_obj = BindingSite(bs_atoms_refined, self.protcomplex, self, self.altconf, min_dist, self.Mapper)
+        bs_obj = BindingSite(bs_atoms_refined, self.protcomplex, self, self.altconf, min_dist, self.Mapper, lig_obj.regions)
         pli_obj = PLInteraction(lig_obj, bs_obj, self)
         self.interaction_sets[ligand.mol.title] = pli_obj
 
@@ -1667,12 +1711,12 @@ class PDBComplex:
         else:
             return resis
 
-    def extract_bs(self, cutoff, ligcentroid, resis):
+    def extract_bs(self, cutoff, ligcentroid, resis, regions=None):
         """Return list of ids from residues belonging to the binding site"""
-        return [obres.GetIdx() for obres in resis if self.res_belongs_to_bs(obres, cutoff, ligcentroid)]
+        return [obres.GetIdx() for obres in resis if self.res_belongs_to_bs(obres, cutoff, ligcentroid, regions)]
 
     @staticmethod
-    def res_belongs_to_bs(res, cutoff, ligcentroid):
+    def res_belongs_to_bs(res, cutoff, ligcentroid, regions=None):
         """Check for each residue if its centroid is within a certain distance to the ligand centroid.
         Additionally checks if a residue belongs to a chain restricted by the user (e.g. by defining a peptide chain)"""
         rescentroid = centroid([(atm.x(), atm.y(), atm.z()) for atm in pybel.ob.OBResidueAtomIter(res)])
@@ -1680,7 +1724,7 @@ class PDBComplex:
         near_enough = True if euclidean3d(rescentroid, ligcentroid) < cutoff else False
         #Todo: Test if properly working
         # Add restriction via chains flag
-        return near_enough and residue_belongs_to_receptor(res, config)
+        return near_enough and residue_belongs_to_receptor(res, regions)
 
     def get_atom(self, idx):
         return self.atoms[idx]

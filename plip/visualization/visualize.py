@@ -1,7 +1,7 @@
 from pymol import cmd
 
 from plip.basic import config, logger
-from plip.basic.supplemental import start_pymol
+from plip.basic.supplemental import start_pymol, select_region
 from plip.visualization.pymol import PyMOLVisualizer
 
 logger = logger.get_logger()
@@ -21,6 +21,9 @@ def visualize_in_pymol(plcomplex):
     chain = plcomplex.chain
     if config.PEPTIDES or config.CHAINS:
         vis.ligname = 'PeptideChain%s' % plcomplex.chain
+    if config.REGIONS:
+        lig_idx = config.REGIONS.index(plcomplex.regions)
+        vis.ligname = f'Ligand{lig_idx+1}'
     if config.INTRA is not None:
         vis.ligname = 'Intra%s' % plcomplex.chain
 
@@ -46,10 +49,11 @@ def visualize_in_pymol(plcomplex):
     cmd.set_name(current_name, pdbid)
     cmd.hide('everything', 'all')
     if config.PEPTIDES:
-        if plcomplex.chain in config.RESIDUES.keys():
-            cmd.select(ligname, 'chain %s and not resn HOH and resi %s' % (plcomplex.chain, "+".join(map(str, config.RESIDUES[plcomplex.chain]))))
-        else:
-            cmd.select(ligname, 'chain %s and not resn HOH' % plcomplex.chain)
+        cmd.select(ligname, 'chain %s and not resn HOH' % plcomplex.chain)
+    elif config.REGIONS:
+        lig_region, rec_region = plcomplex.regions
+        lig_selection = select_region(lig_region)
+        cmd.select(ligname, lig_selection)
     else:
         cmd.select(ligname, 'resn %s and chain %s and resi %s*' % (hetid, chain, plcomplex.position))
     logger.debug(f'selecting ligand for PDBID {pdbid} and ligand name {ligname}')
@@ -103,6 +107,10 @@ def visualize_in_pymol(plcomplex):
 
     if config.PEPTIDES or config.CHAINS:
         filename = "%s_PeptideChain%s" % (pdbid.upper(), plcomplex.chain)
+        if config.PYMOL:
+            vis.save_session(config.OUTPATH, override=filename)
+    elif config.REGIONS:
+        filename = f"{pdbid.upper()}_ProteinRegion_{vis.ligname}"
         if config.PYMOL:
             vis.save_session(config.OUTPATH, override=filename)
     elif config.INTRA is not None:

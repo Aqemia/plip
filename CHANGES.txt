@@ -1,5 +1,18 @@
 Changelog
 ---------
+# 3.0.1
+* remove setup.{py,cfg}, update pyproject.toml, use openbabel 3.2.0
+
+# 3.0.0
+* added new `--regions` flag to enable detection of interactions between protein regions (by @snbolz)
+* reworked XML and TXT report file naming; changes default behavior
+* introduced pyproject.toml to ensure compliance with Python packaging standards
+* updated Dockerfile
+* fixed switched coordinates of halogen bond acceptor and donor atoms
+* fixed handling of PDB input passed as string
+* fixed handling of modified residues in protein and peptide ligands
+* several minor bug fixes
+
 # 2.4.0
 * new "--chains" flag to enable detection of interactions between protein chains by @PhiCMS and @snbolz
 * update setup.py, attempt to fix and install broken python openbabel bindings 3.1.1.1
