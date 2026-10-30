@@ -2,6 +2,7 @@ import time
 from operator import itemgetter
 
 import lxml.etree as et
+import gzip
 
 from plip.basic import config
 from plip.basic.config import __version__
@@ -91,20 +92,31 @@ class StructureReport:
             else:
                 self.txtreport.append('No interactions detected.')
 
-    def write_xml(self, as_string=False):
+    def write_xml(self, as_string: bool = False):
         """Write the XML report"""
         if not as_string:
-            et.ElementTree(self.xmlreport).write('{}/{}.xml'.format(self.outpath, self.outputprefix), pretty_print=True,
-                                                 xml_declaration=True)
+            tree = et.ElementTree(self.xmlreport)
+            if config.COMPRESS:
+                with gzip.open(f"{self.outpath}{self.outputprefix}.xml.gz", "wb") as xml_file:
+                    tree.write(xml_file, pretty_print=True, xml_declaration=True, encoding="utf-8")
+            else:
+                tree.write(f"{self.outpath}{self.outputprefix}.xml", pretty_print=True, xml_declaration=True,
+                           encoding="utf-8")
         else:
             output = et.tostring(self.xmlreport, pretty_print=True)
             print(output.decode('utf8'))
 
-    def write_txt(self, as_string=False):
+    def write_txt(self, as_string: bool = False):
         """Write the TXT report"""
         if not as_string:
-            with open('{}/{}.txt'.format(self.outpath, self.outputprefix), 'w') as f:
-                [f.write(textline + '\n') for textline in self.txtreport]
+            if config.COMPRESS:
+                with gzip.open(f"{self.outpath}{self.outputprefix}.txt.gz", "wb") as txt_file:
+                    for textline in self.txtreport:
+                        txt_file.write((textline + '\n').encode('utf-8'))
+            else:
+                with open(f"{self.outpath}{self.outputprefix}.txt", 'w') as txt_file:
+                    for textline in self.txtreport:
+                        txt_file.write(textline + '\n')
         else:
             output = '\n'.join(self.txtreport)
             print(output)

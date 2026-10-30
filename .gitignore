@@ -49,3 +49,5 @@ target/
 *~
 .nfs*
 tests/
+# JetBrains IDE settings
+.idea/
