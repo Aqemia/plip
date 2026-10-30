@@ -247,14 +247,15 @@ def main():
     config.VERBOSE = True if arguments.verbose else False
     config.QUIET = True if arguments.quiet else False
     config.SILENT = True if arguments.silent else False
+    plip_logger = logging.getLogger('plip')
     if config.VERBOSE:
-        logger.setLevel(logging.DEBUG)
+        plip_logger.setLevel(logging.DEBUG)
     elif config.QUIET:
-        logger.setLevel(logging.WARN)
+        plip_logger.setLevel(logging.WARN)
     elif config.SILENT:
-        logger.setLevel(logging.CRITICAL)
+        plip_logger.setLevel(logging.CRITICAL)
     else:
-        logger.setLevel(config.DEFAULT_LOG_LEVEL)
+        plip_logger.setLevel(config.DEFAULT_LOG_LEVEL)
     config.MAXTHREADS = arguments.maxthreads
     config.XML = arguments.xml
     config.TXT = arguments.txt
