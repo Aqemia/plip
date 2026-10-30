@@ -522,8 +522,6 @@ class Mol:
         """Find all possible strong and weak hydrogen bonds donors (all hydrophobic C-H pairings)"""
         donor_pairs = []
         data = namedtuple('hbonddonor', 'd d_orig_atom d_orig_idx h type')
-
-        # Regular donors
         for donor in [a for a in all_atoms if a.OBAtom.IsHbondDonor() and a.idx not in self.altconf]:
             in_ring = False
             if not in_ring:
@@ -532,8 +530,6 @@ class Mol:
                     d_orig_atom = self.Mapper.id_to_atom(d_orig_idx)
                     donor_pairs.append(data(d=donor, d_orig_atom=d_orig_atom, d_orig_idx=d_orig_idx,
                                             h=pybel.Atom(adj_atom), type='regular'))
-
-        # Hydrophobic C-H (weak donors, possibility to filter them out later)
         for carbon in hydroph_atoms:
             for adj_atom in [a for a in pybel.ob.OBAtomAtomIter(carbon.atom.OBAtom) if a.GetAtomicNum() == 1]:
                 d_orig_idx = self.Mapper.mapid(carbon.atom.idx, mtype=self.mtype, bsid=self.bsid)
@@ -617,7 +613,7 @@ class PLInteraction:
         self.Mapper = protcomplex.Mapper
         self.output_path = protcomplex.output_path
         self.altconf = protcomplex.altconf
-        # #@todo Refactor code to combine different directionality (plip authors)
+        # #@todo Refactor code to combine different directionality
 
         self.saltbridge_lneg = saltbridge(self.bindingsite.get_pos_charged(), self.ligand.get_neg_charged(), True)
         self.saltbridge_pneg = saltbridge(self.ligand.get_pos_charged(), self.bindingsite.get_neg_charged(), False)
@@ -641,7 +637,6 @@ class PLInteraction:
         self.all_hbonds_pdon = hbonds(self.ligand.get_hba(),
                                       self.bindingsite.get_hbd(), True, 'strong')
 
-        # Refine : remove hbonds where the atom is already in a salt-bridge or a better h-bond
         self.hbonds_ldon = self.refine_hbonds_ldon(self.all_hbonds_ldon, self.saltbridge_lneg,
                                                    self.saltbridge_pneg)
         self.hbonds_pdon = self.refine_hbonds_pdon(self.all_hbonds_pdon, self.saltbridge_lneg,
@@ -1069,14 +1064,12 @@ class Ligand(Mol):
         self.hbond_don_atom_pairs = self.find_hbd(self.all_atoms, self.hydroph_atoms)
 
         ######
-        # special case function by Plip authors (uses OBabel to deal with the ligand)
         donor_pairs = []
         data = namedtuple('hbonddonor', 'd d_orig_atom d_orig_idx h type')
         for donor in self.all_atoms:
             pdbidx = self.Mapper.mapid(donor.idx, mtype='ligand', bsid=self.bsid, to='original')
             d = cclass.atoms[self.pdb_to_idx_mapping[pdbidx]]
-            if d.OBAtom.IsHbondDonor(): # get polar atoms
-                # iterate over their neighbours which are hydrogens and recognized by OBabel as HBDs
+            if d.OBAtom.IsHbondDonor():
                 for adj_atom in [a for a in pybel.ob.OBAtomAtomIter(d.OBAtom) if a.IsHbondDonorH()]:
                     d_orig_atom = self.Mapper.id_to_atom(pdbidx)
                     donor_pairs.append(data(d=donor, d_orig_atom=d_orig_atom, d_orig_idx=pdbidx,
