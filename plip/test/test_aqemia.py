@@ -15,7 +15,9 @@ def characterize_complex(pdb_file: str, binding_site_id: str) -> PLInteraction:
 
 def test_bayer_reference():
     # tests detection of aromatic LH on Bayer reference compound
+    config.AROMATIC_HBOND_DONORS = True
     complex_ = characterize_complex('aqemia/Pose_Compose_Ref.pdb', 'LIG:A:1')
+    config.AROMATIC_HBOND_DONORS = False
     interactions = complex_.interaction_sets['LIG:A:1']
     assert(len(interactions.all_hbonds_ldon)==3)
     assert(len(interactions.all_hbonds_pdon)==2)

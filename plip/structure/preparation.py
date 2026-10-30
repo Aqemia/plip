@@ -774,9 +774,11 @@ class PLInteraction:
         # Ligand donor : strong, weak and aromatic
         self.all_hbonds_ldon = hbonds(self.bindingsite.get_hba(),
                                       lig_donors, False, 'strong')
-        self.all_hbonds_ldon.extend(hbonds(self.bindingsite.get_hba(),
+        if config.WEAK_HBOND_DONORS:
+            self.all_hbonds_ldon.extend(hbonds(self.bindingsite.get_hba(),
                                       lig_weak_donors, False, 'weak'))
-        self.all_hbonds_ldon.extend(hbonds(self.bindingsite.get_hba(),
+        if config.AROMATIC_HBOND_DONORS:
+            self.all_hbonds_ldon.extend(hbonds(self.bindingsite.get_hba(),
                                       lig_ar_donors, False, 'aromatic'))
 
         # Protein donor : strong only
@@ -1269,7 +1271,7 @@ class Ligand(Mol):
         for donor in self.all_atoms:
             pdbidx = self.Mapper.mapid(donor.idx, mtype='ligand', bsid=self.bsid, to='original')
             d = cclass.atoms[self.pdb_to_idx_mapping[pdbidx]]
-            if d.OBAtom.IsAromatic() : # iterate over aromatic atoms
+            if d.OBAtom.IsAromatic() and d.OBAtom.GetAtomicNum() == 6:  # iterate over aromatic carbons (N-H is a regular donor)
                 # iterate over its neighbours which are Hydrogens
                 for adj_atom in [a for a in pybel.ob.OBAtomAtomIter(d.OBAtom) if a.GetAtomicNum()==1]:
                     d_orig_atom = self.Mapper.id_to_atom(pdbidx)

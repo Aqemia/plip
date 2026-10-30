@@ -1,4 +1,4 @@
-__version__ = '2.4.0+aqemia0.3'
+__version__ = '2.4.0+aqemia0.4'
 __maintainer__ = 'PharmAI GmbH (2020-2021) - www.pharm.ai - hello@pharm.ai'
 __citation_information__ = "Adasme,M. et al. PLIP 2021: expanding the scope of the protein-ligand interaction profiler to DNA and RNA. " \
                            "Nucl. Acids Res. (05 May 2021), gkab294. doi: 10.1093/nar/gkab294"
@@ -34,6 +34,9 @@ NOHYDRO = False  # Do not add hydrogen bonds (in case already present in the str
 MODEL = 1  # The model to be selected for multi-model structures (default = 1).
 CHAINS = None # Define chains for protein-protein interaction detection
 
+AROMATIC_HBOND_DONORS = False  # AQEMIA: treat aromatic C-H of the ligand as hydrogen bond donors
+WEAK_HBOND_DONORS = False  # AQEMIA: use weak hydrogen bonds
+
 
 # Configuration file for Protein-Ligand Interaction Profiler (PLIP)
 # Set thresholds for detection of interactions
@@ -44,8 +47,8 @@ AROMATIC_PLANARITY = 5.0  # Determines allowed deviation from planarity in aroma
 MIN_DIST = 0.5  # Minimum distance for all distance thresholds
 # Some distance thresholds were extended (max. 1.0A) if too restrictive too account for low-quality structures
 HYDROPH_DIST_MAX = 4.0  # Distance cutoff for detection of hydrophobic contacts
-HBOND_DIST_MAX = 3.5  # Max. distance between hydrogen bond donor and acceptor (Hubbard & Haider, 2001) + 0.6 A # CHANGED
-HBOND_DON_ANGLE_MIN = 120  # Min. angle at the hydrogen bond donor (Hubbard & Haider, 2001) + 10 # CHANGED
+HBOND_DIST_MAX = 4.1  # Max. distance between hydrogen bond donor and acceptor (Hubbard & Haider, 2001) + 0.6 A
+HBOND_DON_ANGLE_MIN = 100  # Min. angle at the hydrogen bond donor (Hubbard & Haider, 2001) + 10
 PISTACK_DIST_MAX = 5.5  # Max. distance for parallel or offset pistacking (McGaughey, 1998)
 PISTACK_ANG_DEV = 30  # Max. Deviation from parallel or perpendicular orientation (in degrees)
 PISTACK_OFFSET_MAX = 2.0  # Maximum offset of the two rings (corresponds to the radius of benzene + 0.5 A)
