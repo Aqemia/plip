@@ -55,6 +55,18 @@ def whichchain(atom):
     return atom.GetResidue().GetChain() if atom.GetResidue() is not None else None
 
 
+def residue_belongs_to_receptor(res, config):
+    """tests whether the residue is defined as receptor and is not part of a peptide or residue ligand."""
+    if config.CHAINS:
+        if config.CHAINS[0] and config.CHAINS[1]:  # if receptor and ligand chains were given
+            return res.GetChain() in config.CHAINS[0] and res.GetChain() not in config.CHAINS[1]
+            # True if residue is part of receptor chains and not of ligand chains
+        if config.CHAINS[1]:  # if only ligand chains were given
+            return res.GetChain() not in config.CHAINS[1]  # True if residue is not part of ligand chains
+        return False  # if only receptor chains were given or both is empty
+    return res.GetChain() not in config.PEPTIDES  # True if residue is not part of peptide ligand.
+
+
 #########################
 # Mathematical operations
 #########################
@@ -297,7 +309,6 @@ def sort_members_by_importance(members):
     2. Within each group, sort by chain and position."""
     main = [x for x in members if x[0] not in config.METAL_IONS]
     ion = [x for x in members if x[0] in config.METAL_IONS]
-    sorted_main = sorted(main, key=lambda x: (x[1], x[2]))
     sorted_main = sorted(main, key=lambda x: (x[1], x[2]))
     sorted_ion = sorted(ion, key=lambda x: (x[1], x[2]))
     return sorted_main + sorted_ion

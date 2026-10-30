@@ -19,7 +19,7 @@ def visualize_in_pymol(plcomplex):
     pdbid = plcomplex.pdbid
     lig_members = plcomplex.lig_members
     chain = plcomplex.chain
-    if config.PEPTIDES:
+    if config.PEPTIDES or config.CHAINS:
         vis.ligname = 'PeptideChain%s' % plcomplex.chain
     if config.INTRA is not None:
         vis.ligname = 'Intra%s' % plcomplex.chain
@@ -37,7 +37,8 @@ def visualize_in_pymol(plcomplex):
     start_pymol(run=True, options='-pcq', quiet=not config.VERBOSE and not config.SILENT)
     vis.set_initial_representations()
 
-    cmd.load(plcomplex.sourcefile)
+    cmd.read_pdbstr(plcomplex.source_pdb_file_content, f"{pdbid}_orig")
+
     cmd.frame(config.MODEL)
     current_name = cmd.get_object_list(selection='(all)')[0]
 
@@ -45,7 +46,10 @@ def visualize_in_pymol(plcomplex):
     cmd.set_name(current_name, pdbid)
     cmd.hide('everything', 'all')
     if config.PEPTIDES:
-        cmd.select(ligname, 'chain %s and not resn HOH' % plcomplex.chain)
+        if plcomplex.chain in config.RESIDUES.keys():
+            cmd.select(ligname, 'chain %s and not resn HOH and resi %s' % (plcomplex.chain, "+".join(map(str, config.RESIDUES[plcomplex.chain]))))
+        else:
+            cmd.select(ligname, 'chain %s and not resn HOH' % plcomplex.chain)
     else:
         cmd.select(ligname, 'resn %s and chain %s and resi %s*' % (hetid, chain, plcomplex.position))
     logger.debug(f'selecting ligand for PDBID {pdbid} and ligand name {ligname}')
@@ -97,7 +101,7 @@ def visualize_in_pymol(plcomplex):
         cmd.hide('cartoon', '%sLines' % plcomplex.pdbid)
         cmd.show('lines', '%sLines' % plcomplex.pdbid)
 
-    if config.PEPTIDES:
+    if config.PEPTIDES or config.CHAINS:
         filename = "%s_PeptideChain%s" % (pdbid.upper(), plcomplex.chain)
         if config.PYMOL:
             vis.save_session(config.OUTPATH, override=filename)

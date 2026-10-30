@@ -10,6 +10,7 @@ import logging
 import multiprocessing
 import os
 import sys
+import ast
 from argparse import ArgumentParser
 from collections import namedtuple
 
@@ -25,11 +26,10 @@ from plip.exchange.webservices import fetch_pdb
 from plip.structure.preparation import create_folder_if_not_exists, extract_pdbid
 from plip.structure.preparation import tilde_expansion, PDBComplex
 
-description = f"The Protein-Ligand Interaction Profiler (PLIP) {__version__}" \
+description = f"The Protein-Ligand Interaction Profiler (PLIP) Version {__version__} " \
               "is a command-line based tool to analyze interactions in a protein-ligand complex. " \
               "If you are using PLIP in your work, please cite: " \
-              "Salentin,S. et al. PLIP: fully automated protein-ligand interaction profiler. " \
-              "Nucl. Acids Res. (1 July 2015) 43 (W1): W443-W447. doi:10.1093/nar/gkv315" \
+              f"{config.__citation_information__} " \
               f"Supported and maintained by: {config.__maintainer__}"
 
 
@@ -39,9 +39,19 @@ def threshold_limiter(aparser, arg):
         aparser.error("All thresholds have to be values larger than zero.")
     return arg
 
+def residue_list(input_string):
+    """Parse mix of residue numbers and ranges passed with the --residues flag into one list"""
+    result = []
+    for part in input_string.split(','):
+        if '-' in part:
+            start, end = map(int, part.split('-'))
+            result.extend(range(start, end + 1))
+        else:
+            result.append(int(part))
+    return result
 
 def process_pdb(pdbfile, outpath, as_string=False, outputprefix='report'):
-    """Analysis of a single PDB file. Can generate textual reports XML, PyMOL session files and images as output."""
+    """Analysis of a single PDB file with optional chain filtering."""
     if not as_string:
         pdb_file_name = pdbfile.split('/')[-1]
         startmessage = f'starting analysis of {pdb_file_name}'
@@ -51,7 +61,6 @@ def process_pdb(pdbfile, outpath, as_string=False, outputprefix='report'):
     mol = PDBComplex()
     mol.output_path = outpath
     mol.load_pdb(pdbfile, as_string=as_string)
-    # @todo Offers possibility for filter function from command line (by ligand chain, position, hetid)
     for ligand in mol.ligands:
         mol.characterize_complex(ligand)
 
@@ -117,27 +126,27 @@ def remove_duplicates(slist):
     return unique
 
 
-def run_analysis(inputstructs, inputpdbids):
+def run_analysis(inputstructs, inputpdbids, chains=None):
     """Main function. Calls functions for processing, report generation and visualization."""
     pdbid, pdbpath = None, None
     # @todo For multiprocessing, implement better stacktracing for errors
     # Print title and version
     logger.info(f'Protein-Ligand Interaction Profiler (PLIP) {__version__}')
     logger.info(f'brought to you by: {config.__maintainer__}')
-    logger.info(f'please cite: https://www.doi.org/10.1093/nar/gkv315')
+    logger.info(f'please cite: {config.__citation_information__}')
     output_prefix = config.OUTPUTFILENAME
 
     if inputstructs is not None:  # Process PDB file(s)
-        num_structures = len(inputstructs)
+        num_structures = len(inputstructs)  # @question: how can it become more than one file? The tilde_expansion function does not consider this case.
         inputstructs = remove_duplicates(inputstructs)
         read_from_stdin = False
         for inputstruct in inputstructs:
-            if inputstruct == '-':
+            if inputstruct == '-':  # @expl: when user gives '-' as input, pdb file is read from stdin
                 inputstruct = sys.stdin.read()
                 read_from_stdin = True
                 if config.RAWSTRING:
                     if sys.version_info < (3,):
-                        inputstruct = bytes(inputstruct).decode('unicode_escape')
+                        inputstruct = bytes(inputstruct).decode('unicode_escape')  # @expl: in Python2, the bytes object is just a string.
                     else:
                         inputstruct = bytes(inputstruct, 'utf8').decode('unicode_escape')
             else:
@@ -219,6 +228,9 @@ def main():
                             help="Allows to define one or multiple chains as peptide ligands or to detect inter-chain contacts",
                             nargs="+")
     ligandtype.add_argument("--intra", dest="intra", help="Allows to define one chain to analyze intra-chain contacts.")
+    parser.add_argument("--residues", dest="residues", default=[], nargs="+",
+                        help="""Allows to specify which residues of the chain(s) should be considered as peptide ligands.
+                        Give single residues (separated with comma) or ranges (with dash) or both, for several chains separate selections with one space""")
     parser.add_argument("--keepmod", dest="keepmod", default=False,
                         help="Keep modified residues as ligands",
                         action="store_true")
@@ -242,7 +254,19 @@ def main():
     for t in thresholds:
         parser.add_argument('--%s' % t.name, dest=t.name, type=lambda val: threshold_limiter(parser, val),
                             help=argparse.SUPPRESS)
+
+    # Add argument to define receptor and ligand chains
+    parser.add_argument("--chains", dest="chains", type=str,
+                        help="Specify chains as receptor/ligand groups, e.g., '[['A'], ['B']]'. "
+                             "Use format [['A'], ['B', 'C']] to define A as receptor, and B, C as ligands.")
+
+
     arguments = parser.parse_args()
+    # make sure, residues is only used together with --inter (could be expanded to --intra in the future)
+    if arguments.residues and not (arguments.peptides or arguments.intra):
+        parser.error("The --residues option requires specification of a chain with --inter or --peptide")
+    if arguments.residues and len(arguments.residues)!=len(arguments.peptides):
+        parser.error("Please provide residue numbers or ranges for each chain specified. Separate selections with a single space.")
     # configure log levels
     config.VERBOSE = True if arguments.verbose else False
     config.QUIET = True if arguments.quiet else False
@@ -270,15 +294,32 @@ def main():
     config.BREAKCOMPOSITE = arguments.breakcomposite
     config.ALTLOC = arguments.altlocation
     config.PEPTIDES = arguments.peptides
+    config.RESIDUES = dict(zip(arguments.peptides, map(residue_list, arguments.residues)))
     config.INTRA = arguments.intra
     config.NOFIX = arguments.nofix
     config.NOFIXFILE = arguments.nofixfile
-    config.NOPDBCANMAP = arguments.nopdbcanmap
+    config.NOPDBCANMAP = bool(arguments.nopdbcanmap or config.INTRA or config.PEPTIDES)
     config.KEEPMOD = arguments.keepmod
     config.DNARECEPTOR = arguments.dnareceptor
     config.OUTPUTFILENAME = arguments.outputfilename
     config.NOHYDRO = arguments.nohydro
     config.MODEL = arguments.model
+
+    try:
+        # add inner quotes for python backend
+        if not arguments.chains:
+            config.CHAINS = None
+        else:
+            import re
+            quoted_input = re.sub(r'(?<!["\'])\b([a-zA-Z0-9_]+)\b(?!["\'])', r'"\1"', arguments.chains)
+            config.CHAINS = ast.literal_eval(quoted_input)
+        print(config.CHAINS)
+        if config.CHAINS and not all(isinstance(c, list) for c in config.CHAINS):
+            raise ValueError("Chains should be specified as a list of lists, e.g., '[[A], [B, C]]'.")
+    except (ValueError, SyntaxError):
+        parser.error("The --chains option must be in the format '[[A], [B, C]]'.")
+
+
     # Make sure we have pymol with --pics and --pymol
     if config.PICS or config.PYMOL:
         try:

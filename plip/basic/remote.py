@@ -21,7 +21,7 @@ class VisualizerData:
 
         # General Information
         self.lig_members = sorted(pli.ligand.members)
-        self.sourcefile = pcomp.sourcefiles['pdbcomplex']
+        self.source_pdb_file_content = pcomp.sourcefiles['pdbstring'] # store pdb file content as string
         self.corrected_pdb = pcomp.corrected_pdb
         self.pdbid = mol.pymol_name
         self.hetid = ligand.hetid

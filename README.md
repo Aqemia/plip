@@ -11,12 +11,13 @@ Analyze noncovalent protein-ligand interactions in 3D structures with ease.
 <img src="pliplogo.png"  alt="PLIP Logo" height="100">
 
 
-| Use Case                                                                  | [Web Server](https://plip-tool.biotec.tu-dresden.de)         | Docker             | Singularity        | Python Module       |
-|---------------------------------------------------------------------------|--------------------|--------------------|--------------------|--------------------|
-| "I want to analyze my protein-ligand complex!"                            | :heavy_check_mark: | :heavy_check_mark: | :yellow_circle:    | :x:                |
-| "I want to analyze *a billion* protein-ligand complexes!"                 | :x:                | :yellow_circle:    | :heavy_check_mark: | :yellow_circle:    |
-| "I love the Linux command line and want to build a workflow around PLIP!" | :x:                | :heavy_check_mark: | :heavy_check_mark: | :yellow_circle:    |
-| "I'm a Python programmer and want to use PLIP in my project!"             | :x:                | :yellow_circle:    | :yellow_circle:    | :heavy_check_mark: |
+| Use Case                                                                  | [Web Server](https://plip-tool.biotec.tu-dresden.de)         | Docker              | Singularity        | Python Module       | [Colab](https://colab.research.google.com/drive/1KV0Yx6vMFXvtyIRtmkPoMLN0Q6GKG1pm?usp=sharing) |
+|---------------------------------------------------------------------------|--------------------|--------------------|--------------------|--------------------|--------------------|
+| "I want to analyze my protein-ligand complex!"                            | :heavy_check_mark: | :heavy_check_mark: | :yellow_circle:    | :x:                | :heavy_check_mark: |
+| "I want to analyze *a billion* protein-ligand complexes!"                 | :x:                | :yellow_circle:    | :heavy_check_mark: | :yellow_circle:    | :x:                |
+| "I love the Linux command line and want to build a workflow around PLIP!" | :x:                | :heavy_check_mark: | :heavy_check_mark: | :yellow_circle:    |:x:                |
+| "I'm a Python programmer and want to use PLIP in my project!"             | :x:                | :yellow_circle:    | :yellow_circle:    | :heavy_check_mark: | :yellow_circle:    |
+| "I want to analyze large complexes!"             | :x:                | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: |
 
 ---
 
@@ -31,7 +32,7 @@ $ docker run --rm \
     -v ${PWD}:/results \
     -w /results \
     -u $(id -u ${USER}):$(id -g ${USER}) \
-    pharmai/plip:latest -i 1s3v -yv
+    pharmai/plip:latest -i 1vsn -yv
 ```
 
 On Windows:
@@ -40,7 +41,7 @@ $ docker run --rm \
     -v ${PWD}:/results \
     -w /results \
     -u $(id -u ${USER}):$(id -g ${USER}) \
-    pharmai/plip:latest -i 1s3v -yv
+    pharmai/plip:latest -i 1vsn -yv
 ```
 ### Singularity
 
@@ -51,6 +52,10 @@ $ ./plip.simg -i 1vsn -yv
 ```
 
 Singularity allows to use PLIP with ease in HPC environments. Note that you need to have Singularity installed on your base system.
+
+### Google Colab 
+PLIP is available as a [Google Colab](https://colab.research.google.com/drive/1KV0Yx6vMFXvtyIRtmkPoMLN0Q6GKG1pm?usp=sharing) to be used without the need to install it locally. It can be used without constraints in terms of 
+PDB file and protein sizes. 
 
 ---
 
@@ -69,7 +74,7 @@ If you cannot use the containerized bundle or want to use PLIP sources, make sur
 - Python >= 3.6.9
 - [OpenBabel](#Installing-OpenBabel) >= 3.0.0 with [Python bindings](https://open-babel.readthedocs.io/en/latest/UseTheLibrary/PythonInstall.html)
 - PyMOL >= 2.3.0 with Python bindings (optional, for visualization only)
-- ImageMagick >= 6.9 (optional)
+- ImageMagick >= 7.0 (optional)
 
 **Python:** If you are on a system where Python 3 is executed using `python3` instead of just `python`, replace the `python` and `pip` commands in the following steps with `python3` and `pip3` accordingly.
 
@@ -162,6 +167,11 @@ Using PLIP in your commercial or non-commercial project is generally possible wh
 
 ## Citation Information
 If you are using PLIP in your work, please cite
+> Adasme,M. et al. PLIP 2021: expanding the scope of the protein-ligand interaction profiler to DNA and RNA.
+> Nucl. Acids Res. (05 May 2021), gkab294. doi: 10.1093/nar/gkab294
+
+or
+
 > Salentin,S. et al. PLIP: fully automated protein-ligand interaction profiler.
 > Nucl. Acids Res. (1 July 2015) 43 (W1): W443-W447. doi: 10.1093/nar/gkv315
 

@@ -292,7 +292,7 @@ def water_bridges(bs_hba, lig_hba, bs_hbd, lig_hbd, water):
         if not wl.oxy == wd.oxy:
             continue
         # Same water molecule and angle within omega
-        w_angle = vecangle(vector(acc.a.coords, wl.oxy.coords), vector(wl.oxy.coords, don.h.coords))
+        w_angle = vecangle(vector(wl.oxy.coords, acc.a.coords), vector(wl.oxy.coords, don.h.coords))
         if not config.WATER_BRIDGE_OMEGA_MIN < w_angle < config.WATER_BRIDGE_OMEGA_MAX:
             continue
         resnr, reschain, restype = whichresnumber(don.d), whichchain(don.d), whichrestype(don.d)
@@ -310,7 +310,7 @@ def water_bridges(bs_hba, lig_hba, bs_hbd, lig_hbd, water):
         if not wl.oxy == wd.oxy:
             continue
         # Same water molecule and angle within omega
-        w_angle = vecangle(vector(acc.a.coords, wl.oxy.coords), vector(wl.oxy.coords, don.h.coords))
+        w_angle = vecangle(vector(wl.oxy.coords, acc.a.coords), vector(wl.oxy.coords, don.h.coords))
         if not config.WATER_BRIDGE_OMEGA_MIN < w_angle < config.WATER_BRIDGE_OMEGA_MAX:
             continue
         resnr, reschain, restype = whichresnumber(acc.a), whichchain(acc.a), whichrestype(acc.a)
